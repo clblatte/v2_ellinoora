@@ -3,3 +3,4 @@
 .RData
 .Ruserdata
 /output
+list(family = NULL, face = NULL, colour = NULL, size = 12, hjust = NULL, vjust = NULL, angle = NULL, lineheight = NULL, margin = NULL, debug = NULL, inherit.blank = FALSE)
