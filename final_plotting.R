@@ -102,7 +102,7 @@ exclude_ids <- rslt2 %>%
   pull()  # make a vector out of it to iuse it to exclude the ids
 
 
-# Filyter values with unrealistic volume
+# Filter values with unrealistic volume
 rslt2 <- rslt2 %>% 
   dplyr::filter(!id %in% exclude_ids)
 
@@ -131,7 +131,13 @@ rslt_HSI <- rslt2[,c("id", "year", "HSI_RL_S1",
 #for studying the timber volumes and deadwood volumes - table 5 # 
 # Timber volume is only for last years??
 
-rslt_volumes <- rslt2[,c("id", "year", "V_total_deadwood", "V", "scenario", "regime", "mng")] # mng contains value if it is managed or not
+rslt_volumes <- rslt2[,c("id", 
+                         "year", 
+                         "V_total_deadwood",
+                         "V", 
+                         "scenario", 
+                         "regime", 
+                         "mng")] # mng contains value if it is managed or not
 T1 <- c(2081, 2086, 2091, 2096, 2101, 2106, 2111)
 rslt_volumes <- filter(rslt_volumes, year %in% T1)
 
@@ -169,8 +175,8 @@ summary_tab_clean <-
 
 # Check timber range -----------------------------------------------------
 
-range(rslt_volumes$V_total_deadwood) #0.01881114 66.29698181
-range(rslt_volumes$V)  # 0.000 1155.354 # Crazy volume! SIMO simulates until 600 m3/ha:
+range(rslt_volumes$V_total_deadwood)   #0.01881114 66.29698181
+range(rslt_volumes$V)                  # 0.000 1155.354 # Crazy volume! SIMO simulates until 600 m3/ha:
  # can happen under very productivce stands 
 
 
@@ -347,11 +353,10 @@ rslt.mean.out.onlycc <- dplyr::filter(rslt.mean.out, scenario != "Reference")
 
 
 #Lineplot - Figure 3#
-windows(width = 7, height = 3.2)
-rslt.mean.out.onlycc %>%
-  #group_by(year, scenario, Groups)  %>%
-  #summarise(diff_mean = mean(diff, na.rm=TRUE)) %>%
-  ggplot(aes(x = year,
+#windows(width = 7, height = 3.2)
+p_2<- 
+  rslt.mean.out.onlycc %>%
+   ggplot(aes(x = year,
              y = relativediff,
              group= Groups,
              colour= Groups))+ 
@@ -362,12 +367,9 @@ rslt.mean.out.onlycc %>%
              col = color_palette[8]) +
   geom_label(aes(x = 2080, y = 0.0004), col = color_palette[8], 
              label = "Reference climate mean", size = 3) +
-  #theme_bw(base_size = 20)+
   theme(axis.title.x=element_blank()) +
   theme(legend.title = element_blank()) + 
   theme(legend.position="bottom") +
-  #theme(axis.text.x = element_text(angle = 45, #    
-  #hjust = 1)) +#
   ylab("Relative difference in HSI (%)") +
   scale_color_manual(values = color_palette) +
   facet_wrap(vars(scenario)) +
@@ -377,11 +379,21 @@ rslt.mean.out.onlycc %>%
         panel.border = element_rect(colour = "black", 
                                     fill=NA, 
                                     size=1),
-        strip.background =element_rect(color="black", size = 1))  # legend size
+        strip.background =element_rect(color="black", size = 1))
+
+#p
+  ggsave(filename = 'out_figures/Fig_2.pdf',
+    plot = p_2, #last_plot(),
+    device = 'pdf',
+    path = getwd(),
+    width = 7, 
+    height = 3.2,
+    units = c("in"),
+    dpi = 300#,
+  )
 
 
-
-
+ 
 ## with microclimatic groups - FIGURE 3##
 
 #calculating relative differences from current climate scenario# 
@@ -412,7 +424,7 @@ rslt.mean.out.onlycc <- dplyr::filter(rslt.mean.out, scenario != "Reference")
 
 
 #boxplot with relative change in HSI to current climate - Figure 4#
-rslt.mean.out.onlycc %>%
+p_SX <- rslt.mean.out.onlycc %>%
   ggplot(aes(x = Indicator_species,
              y = relativediff,
              colour = Groups)) + 
@@ -430,6 +442,16 @@ rslt.mean.out.onlycc %>%
   ylab("Relative difference in HSI (%)") +
   scale_color_manual(values = color_palette) +
   facet_wrap(vars(scenario))
+
+ggsave(filename = 'out_figures/Fig_SX.pdf',
+       plot = p_SX, #last_plot(),
+       device = 'pdf',
+       path = getwd(),
+       width = 7, 
+       height = 7,
+       units = c("in"),
+       dpi = 300#,
+)
 
 
 
@@ -515,9 +537,9 @@ rslt.mean.out <-
   dplyr::mutate(relativediff = (HSI_mean - HSI_mean_2016)/ HSI_mean_2016 * 100)#%>%
 
 
-#Lineplot - Figure 7#
-windows(width =7 , height = 3.2)
-rslt.mean.out %>%
+#Lineplot - Figure 3#
+#windows(width =7 , height = 3.2)
+p_3 <- rslt.mean.out %>%
   ggplot(aes(x = year,
              y = relativediff,
              group= regime,
@@ -541,6 +563,16 @@ rslt.mean.out %>%
                                     fill=NA, 
                                     size=1),
         strip.background =element_rect(color="black", size = 1)) 
+
+ggsave(filename = 'out_figures/Fig_3.pdf',
+       plot = p_3, #last_plot(),
+       device = 'pdf',
+       path = getwd(),
+       width = 7, 
+       height = 3.2,
+       units = c("in"),
+       dpi = 300#,
+)
 
 
 
@@ -598,7 +630,7 @@ rslt.mean.out.onlycc <- dplyr::filter(rslt.mean.out, scenario != "Reference")
 
 #boxplot with relative change in HSI to current climate - Figure 11#
 windows(width = 7, height = 4)
-rslt.mean.out.onlycc %>%
+p_X4 <- rslt.mean.out.onlycc %>%
   #mutate(Indicator_species = gsub("_", " ", Indicator_species)) %>% # replace the '_' character in the species names 
   ggplot(aes(x = Indicator_species,
              y = relativediff,
@@ -622,6 +654,15 @@ rslt.mean.out.onlycc %>%
                                       size=1),
           strip.background =element_rect(color="black", size = 1))  # legend size
 
+ggsave(filename = 'out_figures/Fig_X4.pdf',
+       plot = p_X4, #last_plot(),
+       device = 'pdf',
+       path = getwd(),
+       width = 7, 
+       height = 7,
+       units = c("in"),
+       dpi = 300#,
+)
 
 #Lineplot _ FIGURE 10#
 
@@ -658,7 +699,7 @@ class(rslt.mean.out.onlycc$Groups)
 #Plotting the relative differences between climate scenarios with microclimatic groups#
 #Lineplot - Figure 10#
 windows(width = 7, height = 4.5)
-rslt.mean.out.onlycc %>%
+p_4 <- rslt.mean.out.onlycc %>%
   ggplot(aes(x = year,
              y = relativediff,
              group= regime,
@@ -681,3 +722,13 @@ rslt.mean.out.onlycc %>%
                                     size=1),
         strip.background =element_rect(color="black", size = 1))  # legend size
 
+
+ggsave(filename = 'out_figures/Fig_4.pdf',
+       plot = p_4, #last_plot(),
+       device = 'pdf',
+       path = getwd(),
+       width = 7, 
+       height = 4.5,
+       units = c("in"),
+       dpi = 300#,
+)
