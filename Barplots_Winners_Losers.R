@@ -33,7 +33,9 @@ typ <- c ("Winners", "Losers")
 Type <- rep(typ, times = 7)
 Type
 
-reg =c("BAU","BAU_15","BAUwGTR","BAUwoT","BAUwoT_m20", "CCF","SA")
+#reg =c("BAU","BAU_15","BAUwGTR","BAUwoT","BAUwoT_m20", "CCF","SA")
+reg = c("BAU", "extended", "GTR", "noThin", "shortened", "CCF", "SA")
+
 Regime = rep(reg, each=2)
 Regime
 
