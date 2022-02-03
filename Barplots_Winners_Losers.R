@@ -2,6 +2,9 @@
 # Author: Maria Triviño
 # Date 7th Dec 21
 
+library(ggplot2)
+library(ggpubr)
+
 personal_theme = theme(plot.title = 
                          element_text(hjust = 0.5)) +
   theme(panel.background = element_rect(fill = 'white', colour = 'black'))+
@@ -83,4 +86,6 @@ fig3 <- ggarrange(Fig_RCP45, Fig_RCP85,
                   labels = c("a", "b"),
                   ncol = 2, nrow = 1)
 fig3
-ggsave(file = "Fig Win_Los2 Dec21.tiff", plot = fig3, width=25, height=10, units="cm", dpi=120, compression="lzw")
+getwd()
+setwd("/Users/matrivi/Documents/0 Work/v2_ellinoora/output")
+ggsave(file = "Fig Win_Los2 Jan22.tiff", plot = fig3, width=25, height=10, units="cm", dpi=120, compression="lzw")
