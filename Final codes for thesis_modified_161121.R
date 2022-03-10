@@ -400,11 +400,6 @@ range(rslt.mean.out$relativediff)#relative diff is between -4,58 - 3,97#
 #I select only cc scenarios for the plot#
 rslt.mean.out.onlycc <- dplyr::filter(rslt.mean.out, scenario != "Reference")
 
-#I choose colours for the plot#
-
-color_palette <- c("black", "#56B4E9", "#E69F00", "#009E73",
-                   "#CC79A7", "#F0E442", "#0072B2", "#D55E00")
-
 
 #boxplot with relative change in HSI to current climate - Figure 4#
 rslt.mean.out.onlycc %>%
