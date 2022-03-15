@@ -7,11 +7,13 @@
 #               remove the extra productive sites? 
 #               (having unrealistically high volume > 1000 m3/ha under RCP 85?)
 #               remove Vaasa from plots
+#               added the Table S2: mean+-df for HSI (last 30 years) 
 
 
 ##modifying and organizing the data ## 
 #remove all objects from previous session#
 rm(list=ls())
+
 #first remember to set the path for the project#
 path <- paste0(getwd(),"/")
 
@@ -188,10 +190,10 @@ range(rslt_volumes$V)  # 0.000 1155.354 # Crazy volume! SIMO simulates until 600
 
 
 rslt_volumes %>% 
-  filter(id == 29609175) %>%  # 29609175 is over 1100 m3/ha
+  #filter(id == 29609175) %>%  # 29609175 is over 1100 m3/ha
   ggplot(aes(x = year,
              y = V_total_deadwood        ,# V,
-             color = regime)) +
+             color = regime_new)) +
   geom_line() +
   facet_grid(.~scenario)
 
@@ -232,12 +234,8 @@ colnames(rslt_HSI)
 ##Selection of management regimes##
 
 #This is for studying the effects of climate change#
-rslt_HSI_cc <- subset(rslt_HSI, regime == "SA")
-length(unique(rslt_HSI$id)) #1758
-
-
-
-
+rslt_HSI_cc <- subset(rslt_HSI, regime_new == "SA")
+length(unique(rslt_HSI$id)) #1759
 
 
 
@@ -304,7 +302,7 @@ summary_tab_HSI <-
   mutate_if(is.numeric, round, 1)    #%>%   # keep only 2 decimal numbers
 
 
-# Merge columns together:
+# Merge columns together to make a nice output table
 summary_tab_HSI_clean <- 
   summary_tab_HSI %>% 
   mutate(
@@ -312,8 +310,6 @@ summary_tab_HSI_clean <-
   dplyr::select(regime_new, scenario, micro, HSI_mean)  %>% 
   pivot_wider(names_from  = regime_new,
               values_from = HSI_mean)  
-
-
 
 
 
@@ -405,19 +401,15 @@ rslt.mean.out.onlycc %>%
              y = relativediff,
              group= Groups,
              colour= Groups))+ 
-  #scale_y_continuous(labels=scales::percent, limits = c(-0.001, 0.01)) +#
   geom_line(size = 1) +  
   geom_hline(yintercept=0,         # add horizontal line at value 0
              linetype="dashed", 
              col = color_palette[8]) +
   geom_label(aes(x = 2080, y = 0.0004), col = color_palette[8], 
              label = "Current climate mean", size = 3) +
-  #theme_bw(base_size = 20)+
   theme(axis.title.x=element_blank()) +
   theme(legend.title = element_blank()) + 
   theme(legend.position="bottom") +
-  #theme(axis.text.x = element_text(angle = 45, #    
-  #hjust = 1)) +#
   ylab("Relative difference in HSI (%)") +
   scale_color_manual(values = color_palette) +
   facet_wrap(vars(scenario)) +
@@ -484,12 +476,10 @@ rslt.mean.out.onlycc %>%
 ########Effects of forest management ######################
 
 #choosing the data#
-rslt_HSI_fm<- subset(rslt_HSI, regime == "SA" | regime == "BAU" | regime == "BAUwoT" | 
-                    regime == "BAU_15" | regime == "BAUwoT_m20" |
-                    regime == "BAUwGTR" | regime == "CCF_2")
+rslt_HSI_fm<- rslt_HSI
 
 length(unique(rslt_HSI$id))      # 1802
-length(unique(rslt_HSI$regime))  # 7
+length(unique(rslt_HSI$regime_new))  # 7
 
 dim(rslt_HSI)#675180 rows, 25 columns#
 
@@ -538,7 +528,8 @@ rslt.plot <- rslt_gather %>%
 
 
 #Reordering factor levels of Indicator species-variable# !!!! need to check this part of code: why is it needed??
-rslt.plot$Indicator_species<- factor(rslt2$Indicator_species, levels=unique(rslt2$Indicator_species))
+rslt.plot$Indicator_species<- factor(rslt2$Indicator_species, 
+                                     levels=unique(rslt2$Indicator_species))
 levels(rslt2$Indicator_species)
 
 
@@ -588,9 +579,7 @@ rslt.mean.out %>%
 
 #Organizing the data before plotting#
 
-rslt_HSI_ccfm <- subset(rslt_HSI, regime == "SA" | regime == "BAU" | regime == "BAUwoT" | 
-                     regime == "BAU_15" | regime == "BAUwoT_m20" |
-                     regime == "BAUwGTR" | regime == "CCF_2")
+rslt_HSI_ccfm <- rslt_HSI
 
 ##Including all species but labeling them with microclimatic preference##
 #I choose which species belong to each group#
@@ -635,10 +624,6 @@ range(rslt.mean.out$relativediff)#relative diff is between -4,58 - 3,97#
 #I select only cc scenarios for the plot#
 rslt.mean.out.onlycc <- dplyr::filter(rslt.mean.out, scenario != "Current")
 
-#I choose colours for the plot#
-
-color_palette <- c("black", "#56B4E9", "#E69F00", "#009E73",
-                   "#CC79A7", "#F0E442", "#0072B2", "#D55E00")
 
 
 #boxplot with relative change in HSI to current climate - Figure 11#
