@@ -670,6 +670,7 @@ rslt.mean.out.onlycc <- dplyr::filter(rslt.mean.out, scenario != "Reference")
 
 
 #boxplot with relative change in HSI to current climate - Figure 11#
+windows(7.5, 6)
 p_S4 <- 
     rslt.mean.out.onlycc %>%
     #mutate(Indicator_species = gsub("_", " ", Indicator_species)) %>% # replace the '_' character in the species names 
@@ -688,7 +689,7 @@ p_S4 <-
     scale_color_manual(values = color_palette) +
     facet_grid(scenario ~ regime) +
     theme(axis.title   = element_text(size = 12),  # labels size
-          axis.text    = element_text(size = 10),
+          axis.text    = element_text(size = 8),
           legend.text  = element_text(size = 10),
           legend.position  = 'bottom',
           panel.border = element_rect(colour = "black", 
