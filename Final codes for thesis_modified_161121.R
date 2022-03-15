@@ -51,7 +51,7 @@ my_regimes = c("SA" ,"BAU", "BAUwoT",  "BAU_15", "BAUwoT_m20", "BAUwGTR", "CCF_2
 # Subset only regimes of interest
 rslt2 <- rslt %>% 
   filter(regime %in% my_regimes) %>% 
-  mutate(regime_new = case_when(regime == "BAUwoT"     ~ 'noThin',
+  mutate(regime = case_when(regime == "BAUwoT"     ~ 'noThin',
                                 regime == "BAU_15"     ~ 'extended',
                                 regime == "BAUwoT_m20" ~ 'shortened',
                                 regime == "BAUwGTR"    ~ 'GTR',
@@ -75,7 +75,8 @@ rslt2 <- rslt2 %>%  separate(name, c("scenario","gpkg"), sep = "_MV_")
 class(rslt2$scenario)
 #I change the order of climate scenarios#
 str(rslt2$scenario)
-rslt2$scenario <- factor(rslt2$scenario, levels=unique(rslt2$scenario))
+rslt2$scenario <- factor(rslt2$scenario, 
+                         levels=unique(rslt2$scenario))
 
 
 #Then I rename scenario names#
@@ -121,14 +122,14 @@ rslt2 <- rslt2 %>%
 # Timber volume is only for last years??
 
 rslt_volumes <- rslt2[,c("id", "year", "V_total_deadwood", 
-                         "V", "scenario", "regime_new", "mng")] # mng contains value if it is managed or not
+                         "V", "scenario", "regime", "mng")] # mng contains value if it is managed or not
 
 # Get the list of final years
 T1 <- c(2081, 2086, 2091, 2096, 2101, 2106, 2111)
 rslt_volumes <- filter(rslt_volumes, year %in% T1)
 
 
-# Get a summary table for deadwood by regimes and scenarios
+# Get a summary table for deadwood by regimes and scenarios-------------------------------------------
 summary_tab_dw <- 
   rslt_volumes %>% 
   group_by(scenario, mng) %>% 
@@ -166,7 +167,7 @@ rslt_HSI <- rslt2[,c("id", "year", "HSI_RL_S1",
                      "HSI_RL_S12", "HSI_RL_S13", "HSI_RL_S15", "HSI_RL_S16", 
                      "HSI_RL_S17", "HSI_RL_S18", "HSI_RL_S19", "HSI_RL_S20", 
                      "HSI_RL_S21", "HSI_RL_S22", "HSI_RL_S23", "HSI_RL_S26",
-                     "scenario",   "regime_new")]
+                     "scenario",   "regime")]
 
 
 
@@ -199,9 +200,6 @@ rslt_volumes %>%
 
 
 #Renaming of indicator species according to their real names#
-  # ------------------
-# I had to include the "dplyr::" before rename --> otherwise it did not work
-# ------------------
 
 rslt_HSI <- rslt_HSI %>%
    dplyr::rename(Ditylus_laevis      = HSI_RL_S1,
@@ -234,7 +232,7 @@ colnames(rslt_HSI)
 ##Selection of management regimes##
 
 #This is for studying the effects of climate change#
-rslt_HSI_cc <- subset(rslt_HSI, regime_new == "SA")
+rslt_HSI_cc <- subset(rslt_HSI, regime == "SA")
 length(unique(rslt_HSI$id)) #1759
 
 
@@ -295,7 +293,7 @@ HSI_microclim <-
 # Get a summary table for HSI values by microclimatic groups 
 summary_tab_HSI <- 
   HSI_microclim %>% 
-  group_by(scenario, regime_new, micro) %>% 
+  group_by(scenario, regime, micro) %>% 
   summarize(mean_HSI   = mean(HSI_value, na.rm = T),
             sd_HSI     = sd(HSI_value       , na.rm = T)
             ) %>% 
@@ -306,9 +304,9 @@ summary_tab_HSI <-
 summary_tab_HSI_clean <- 
   summary_tab_HSI %>% 
   mutate(
-    HSI_mean       = stringr::str_glue("{mean_HSI}±{sd_HSI}")) %>% 
-  dplyr::select(regime_new, scenario, micro, HSI_mean)  %>% 
-  pivot_wider(names_from  = regime_new,
+    HSI_mean = stringr::str_glue("{mean_HSI}±{sd_HSI}")) %>% 
+  dplyr::select(regime, scenario, micro, HSI_mean)  %>% 
+  pivot_wider(names_from  = regime,
               values_from = HSI_mean)  
 
 
@@ -335,6 +333,11 @@ theme_update(panel.grid.major = element_line(colour = "grey95",
 
 
 
+#set color palette# --------------------------------------------------------
+
+color_palette <- c("black", "#56B4E9", "#E69F00", "#009E73",
+                   "#CC79A7", "#F0E442", "#0072B2", "#D55E00")
+
 
 
 
@@ -349,6 +352,8 @@ rslt_gather <- gather(rslt_HSI_cc,
 rslt.plot <- rslt_gather %>% 
   dplyr::mutate(Groups = ifelse(Indicator_species %in% indifferent, "Indifferent",
                                 ifelse(Indicator_species %in% shady, "Shady","Sunny")))
+
+
 table(rslt.plot$Groups)#756560 rows indiff, 1080800 shady, 432320 sunny
 dim(rslt.plot)#2269680, 7
 
@@ -359,7 +364,11 @@ rslt.plot$Indicator_species<- factor(rslt.plot$Indicator_species,
 levels(rslt.plot$Indicator_species)
 
 
-##PLOTTING##
+##PLOTTING## --------------------------------------------------------------------------
+
+# Effect of climate change on HSI -----------------------------------------------------
+
+
 ##FIGURE 3 & 4##
 
 ##with current scenario as a base line ##
@@ -382,31 +391,28 @@ rslt.mean.out <-
 range(rslt.mean.out$relativediff)#relative diff is between -4,58 - 3,97#
 
 
-#set color palette#
 
-color_palette <- c("black", "#56B4E9", "#E69F00", "#009E73",
-                   "#CC79A7", "#F0E442", "#0072B2", "#D55E00")
 
-#I select only cc scenarios for the plot#
+#I select only cc scenarios for the plot ------------------------------------------
 rslt.mean.out.onlycc <- dplyr::filter(rslt.mean.out, scenario != "Reference")
 
 
 
 #Lineplot - Figure 3#
-windows(width = 7, height = 3.2)
-rslt.mean.out.onlycc %>%
-  #group_by(year, scenario, Groups)  %>%
-  #summarise(diff_mean = mean(diff, na.rm=TRUE)) %>%
+
+p_2<- 
+  rslt.mean.out.onlycc %>%
   ggplot(aes(x = year,
              y = relativediff,
              group= Groups,
              colour= Groups))+ 
+  #scale_y_continuous(labels=scales::percent, limits = c(-0.001, 0.01)) +#
   geom_line(size = 1) +  
   geom_hline(yintercept=0,         # add horizontal line at value 0
              linetype="dashed", 
              col = color_palette[8]) +
   geom_label(aes(x = 2080, y = 0.0004), col = color_palette[8], 
-             label = "Current climate mean", size = 3) +
+             label = "Reference climate mean", size = 3) +
   theme(axis.title.x=element_blank()) +
   theme(legend.title = element_blank()) + 
   theme(legend.position="bottom") +
@@ -419,9 +425,18 @@ rslt.mean.out.onlycc %>%
         panel.border = element_rect(colour = "black", 
                                     fill=NA, 
                                     size=1),
-        strip.background =element_rect(color="black", size = 1))  # legend size
+        strip.background =element_rect(color="black", size = 1))
 
-
+#p
+ggsave(filename = 'out_figures/Fig_2.pdf',
+       plot = p_2, #last_plot(),
+       device = 'pdf',
+       path = getwd(),
+       width = 7, 
+       height = 3.2,
+       units = c("in"),
+       dpi = 300#,
+)
 
 
 ## with microclimatic groups - FIGURE 3##
@@ -449,8 +464,12 @@ range(rslt.mean.out$relativediff)#relative diff is between -4,58 - 3,97#
 rslt.mean.out.onlycc <- dplyr::filter(rslt.mean.out, scenario != "Reference")
 
 
+
+# Figure SX: Differences in HSI for individual species ----------------------------------------------
+
+
 #boxplot with relative change in HSI to current climate - Figure 4#
-rslt.mean.out.onlycc %>%
+p_SX <- rslt.mean.out.onlycc %>%
   ggplot(aes(x = Indicator_species,
              y = relativediff,
              colour = Groups)) + 
@@ -470,7 +489,15 @@ rslt.mean.out.onlycc %>%
   facet_wrap(vars(scenario))
 
 
-
+ggsave(filename = 'out_figures/Fig_SX.pdf',
+       plot = p_SX, #last_plot(),
+       device = 'pdf',
+       path = getwd(),
+       width = 7, 
+       height = 7,
+       units = c("in"),
+       dpi = 300#,
+)
 
 
 ########Effects of forest management ######################
@@ -478,10 +505,10 @@ rslt.mean.out.onlycc %>%
 #choosing the data#
 rslt_HSI_fm<- rslt_HSI
 
-length(unique(rslt_HSI$id))      # 1802
+length(unique(rslt_HSI$id))          # 1759
 length(unique(rslt_HSI$regime_new))  # 7
 
-dim(rslt_HSI)#675180 rows, 25 columns#
+dim(rslt_HSI) #550920 rows, 25 columns#
 
 
 #Grouping by microclimatic preferences#
@@ -514,24 +541,24 @@ levels(rslt.plot$Indicator_species)
 
 
 #creating new column "Groups" including the names of microclimatic groups#
-
-rslt_indifferent <- filter(rslt_gather, 
-                           Indicator_species %in% indifferent)
-rslt_shady       <- filter(rslt_gather, 
-                           Indicator_species %in% shady)
-rslt_sunny       <- filter(rslt_gather, 
-                           Indicator_species %in% sunny)
-
-rslt.plot <- rslt_gather %>% 
-  dplyr::mutate(Groups = ifelse(Indicator_species %in% indifferent, "indifferent",
-                                ifelse(Indicator_species %in% shady, "shady", "sunny")))
-
-
-#Reordering factor levels of Indicator species-variable# !!!! need to check this part of code: why is it needed??
-rslt.plot$Indicator_species<- factor(rslt2$Indicator_species, 
-                                     levels=unique(rslt2$Indicator_species))
-levels(rslt2$Indicator_species)
-
+# 
+# rslt_indifferent <- filter(rslt_gather, 
+#                            Indicator_species %in% indifferent)
+# rslt_shady       <- filter(rslt_gather, 
+#                            Indicator_species %in% shady)
+# rslt_sunny       <- filter(rslt_gather, 
+#                            Indicator_species %in% sunny)
+# 
+# rslt.plot <- rslt_gather %>% 
+#   dplyr::mutate(Groups = ifelse(Indicator_species %in% indifferent, "indifferent",
+#                                 ifelse(Indicator_species %in% shady, "shady", "sunny")))
+# 
+# 
+# #Reordering factor levels of Indicator species-variable# !!!! need to check this part of code: why is it needed??
+# rslt.plot$Indicator_species<- factor(rslt2$Indicator_species, 
+#                                      levels=unique(rslt2$Indicator_species))
+# levels(rslt2$Indicator_species)
+# 
 
 
 
@@ -542,37 +569,53 @@ levels(rslt2$Indicator_species)
 
 rslt.mean <- 
   rslt.plot%>% 
-  group_by(year, regime_new, Groups) %>%
+  group_by(year, regime, Groups) %>%
   dplyr::summarise(HSI_mean = mean(HSI_value, na.rm=TRUE))# %>%
 
 
 rslt.mean.out <- 
   rslt.mean %>% 
-  group_by(regime_new, Groups) %>% 
+  group_by(regime, Groups) %>% 
   dplyr::mutate(HSI_mean_2016 = HSI_mean[year == "2016"])%>% 
   dplyr::mutate(relativediff = (HSI_mean - HSI_mean_2016)/ HSI_mean_2016 * 100)#%>%
 
 
-#Lineplot - Figure 7#
-rslt.mean.out %>%
+#Lineplot - Figure 3#
+#windows(width =7 , height = 3.2)
+p_3 <- rslt.mean.out %>%
   ggplot(aes(x = year,
              y = relativediff,
-             group= regime_new,
-             colour= regime_new))+ 
+             group= regime,
+             colour= regime))+ 
   geom_line(size = 1) +
   geom_hline(yintercept=0, 
              linetype="dashed", 
              col = color_palette[8]) +
   geom_label(aes(x = 2080, y = 0.0004), col = color_palette[8], 
              label = "year 2016 mean", size = 3) +
-  theme_bw(base_size = 20)+
-  theme(axis.title.x=element_blank()) +
-  theme(legend.title = element_blank()) + 
-  theme(legend.position="top") +
-  ylab("relative difference in HSI (%)") +
+  ylab("Relative difference in HSI (%)") +
   scale_color_manual(values = color_palette) +
-  facet_wrap(vars(Groups))
+  facet_wrap(vars(Groups)) +
+  theme(axis.title.x =element_blank(), 
+        legend.title = element_blank(),
+        legend.position ="bottom",
+        axis.title   = element_text(size = 12),  # labels size
+        axis.text    = element_text(size = 10),
+        legend.text  = element_text(size = 10),
+        panel.border = element_rect(colour = "black", 
+                                    fill=NA, 
+                                    size=1),
+        strip.background =element_rect(color="black", size = 1)) 
 
+ggsave(filename = 'out_figures/Fig_3.pdf',
+       plot = p_3, #last_plot(),
+       device = 'pdf',
+       path = getwd(),
+       width = 7, 
+       height = 3.2,
+       units = c("in"),
+       dpi = 300#,
+)
 
 
 ##Plotting the effects of climate change on HSI-index - FIGURES 10&11##
@@ -616,35 +659,58 @@ range(rslt.mean$HSI_mean)
 rslt.mean.out <- 
   rslt.mean%>% 
   group_by(year, regime, Indicator_species, Groups) %>% 
-  dplyr::mutate(HSI_mean_current = HSI_mean[scenario == "Current"])%>%
+  dplyr::mutate(HSI_mean_current = HSI_mean[scenario == "Reference"])%>%
   dplyr::mutate(relativediff = (HSI_mean - HSI_mean_current)/ HSI_mean_current * 100)#%>%
 
 range(rslt.mean.out$relativediff)#relative diff is between -4,58 - 3,97#
 
 #I select only cc scenarios for the plot#
-rslt.mean.out.onlycc <- dplyr::filter(rslt.mean.out, scenario != "Current")
+rslt.mean.out.onlycc <- dplyr::filter(rslt.mean.out, scenario != "Reference")
 
 
 
 #boxplot with relative change in HSI to current climate - Figure 11#
-rslt.mean.out.onlycc %>%
-  ggplot(aes(x = Indicator_species,
-             y = relativediff,
-             colour = Groups)) + 
-  geom_boxplot() +
-  coord_flip() + 
-  stat_boxplot(geom = 'errorbar') +
-  geom_hline(yintercept=0,
-             linetype="dashed", 
-             col = color_palette[8]) +
-  theme_bw(base_size = 15)+
-  theme(axis.title.y =element_blank()) +
-  theme(legend.title = element_blank()) + 
-  theme(legend.position="top") +
-  ylab("relative difference in HSI (%)") +
-  scale_color_manual(values = color_palette) +
-  facet_grid(scenario ~ regime)
-
+p_S4 <- 
+    rslt.mean.out.onlycc %>%
+    #mutate(Indicator_species = gsub("_", " ", Indicator_species)) %>% # replace the '_' character in the species names 
+    #filter(year %in% T1) %>% 
+    ggplot(aes(x = Indicator_species,
+               y = relativediff,
+               colour = Groups)) + 
+    geom_boxplot() +
+    coord_flip() + 
+    stat_boxplot(geom = 'errorbar') +
+    geom_hline(yintercept=0,
+               linetype="dashed", 
+               col = color_palette[8]) +
+    xlab("Indicator species") +
+    ylab("Relative difference in HSI (%)") +
+    scale_color_manual(values = color_palette) +
+    facet_grid(scenario ~ regime) +
+    theme(axis.title   = element_text(size = 12),  # labels size
+          axis.text    = element_text(size = 10),
+          legend.text  = element_text(size = 10),
+          legend.position  = 'bottom',
+          panel.border = element_rect(colour = "black", 
+                                      fill=NA, 
+                                      size=1),
+          strip.background =element_rect(color="black", size = 1))  # legend size
+  
+ggsave(filename = 'out_figures/Fig_S4.pdf',
+         plot = p_S4, #last_plot(),
+         device = 'pdf',
+         path = getwd(),
+         width = 7.5, 
+         height = 6,
+         units = c("in"),
+         dpi = 300#,
+  )
+  
+  
+  
+  
+  
+  
 
 #Lineplot _ FIGURE 10#
 
@@ -660,7 +726,7 @@ rslt.mean <-
 rslt.mean.out <- 
   rslt.mean%>% 
   group_by(year, regime, Groups) %>% 
-  dplyr::mutate(HSI_mean_current = HSI_mean[scenario == "Current"])%>%
+  dplyr::mutate(HSI_mean_current = HSI_mean[scenario == "Reference"])%>%
   dplyr::mutate(relativediff = (HSI_mean - HSI_mean_current)/ HSI_mean_current * 100)#%>%
 
 #dplyr::mutate(diff = HSI_mean - HSI_mean_current) %>%#
@@ -668,7 +734,7 @@ rslt.mean.out <-
 
 
 #I drop out current climate scenario because I don't want it to my plot#
-rslt.mean.out.onlycc <- dplyr::filter(rslt.mean.out, scenario != "Current")
+rslt.mean.out.onlycc <- dplyr::filter(rslt.mean.out, scenario != "Reference")
 
 
 #Changing the grouping variable from character to a factor#
@@ -680,7 +746,8 @@ class(rslt.mean.out.onlycc$Groups)
 
 #Plotting the relative differences between climate scenarios with microclimatic groups#
 #Lineplot - Figure 10#
-rslt.mean.out.onlycc %>%
+windows(width = 7, height = 4.5)
+p_4 <- rslt.mean.out.onlycc %>%
   ggplot(aes(x = year,
              y = relativediff,
              group= regime,
@@ -690,12 +757,27 @@ rslt.mean.out.onlycc %>%
              linetype="dashed", 
              col = color_palette[8]) +
   #geom_label(aes(x = 2080, y = 0.0004), col = color_palette[8], 
-  #label = "Current climate mean", size = 5) +
-  theme_bw(base_size = 20)+
-  theme(axis.title.x=element_blank()) +
-  theme(legend.title = element_blank()) + 
-  theme(legend.position="top") +
-  ylab("relative difference in HSI (%)") +
+  #label = "Reference climate mean", size = 5) +
+  ylab("Relative difference in HSI (%)") +
   scale_color_manual(values = color_palette) +
-  facet_grid(scenario ~ Groups)
+  facet_grid(scenario ~ Groups) +
+  theme(axis.title   = element_text(size = 12),  # labels size
+        axis.text    = element_text(size = 10),
+        legend.text  = element_text(size = 10),
+        legend.position  = 'bottom',
+        panel.border = element_rect(colour = "black", 
+                                    fill=NA, 
+                                    size=1),
+        strip.background =element_rect(color="black", size = 1))  # legend size
+
+
+ggsave(filename = 'out_figures/Fig_4.pdf',
+       plot = p_4, #last_plot(),
+       device = 'pdf',
+       path = getwd(),
+       width = 7, 
+       height = 4.5,
+       units = c("in"),
+       dpi = 300#,
+)
 
