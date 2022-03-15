@@ -114,54 +114,60 @@ rslt2 <- rslt2 %>%
 
 
 
-# Choosing the variables from csv-tables  --------------------------------------
-
-#HSI:s, name of the watershed, regime#
-rslt_HSI <- rslt2[,c("id", "year", "HSI_RL_S1", 
-                    "HSI_RL_S2",  "HSI_RL_S5",  "HSI_RL_S6",  "HSI_RL_S7", 
-                    "HSI_RL_S8",  "HSI_RL_S9",  "HSI_RL_S10", "HSI_RL_S11", 
-                    "HSI_RL_S12", "HSI_RL_S13", "HSI_RL_S15", "HSI_RL_S16", 
-                    "HSI_RL_S17", "HSI_RL_S18", "HSI_RL_S19", "HSI_RL_S20", 
-                    "HSI_RL_S21", "HSI_RL_S22", "HSI_RL_S23", "HSI_RL_S26",
-                    "scenario",   "regime")]
-
-
 
 #for studying the timber volumes and deadwood volumes - table 5 # 
 # Timber volume is only for last years??
 
-rslt_volumes <- rslt2[,c("id", "year", "V_total_deadwood", "V", "scenario", "regime_new", "mng")] # mng contains value if it is managed or not
+rslt_volumes <- rslt2[,c("id", "year", "V_total_deadwood", 
+                         "V", "scenario", "regime_new", "mng")] # mng contains value if it is managed or not
+
+# Get the list of final years
 T1 <- c(2081, 2086, 2091, 2096, 2101, 2106, 2111)
 rslt_volumes <- filter(rslt_volumes, year %in% T1)
 
 
 # Get a summary table for deadwood by regimes and scenarios
-summary_tab <- 
+summary_tab_dw <- 
   rslt_volumes %>% 
   group_by(scenario, mng) %>% 
   summarize(mean_V_dw  = mean(V_total_deadwood, na.rm = T),
             sd_V_dw    = sd(V_total_deadwood, na.rm = T),
-           # median_V_dw = median(V_total_deadwood, na.rm=T),
             min_V_dw   = min(V_total_deadwood, na.rm=T),
             max_V_dw   = max(V_total_deadwood, na.rm=T),
             mean_V     = mean(V, na.rm = T),
             sd_V       = sd(V, na.rm = T),
-           # median_V   = median(V, na.rm=T),
             min_V      = min(V, na.rm=T),
             max_V      = max(V, na.rm=T)) %>% 
-  mutate_if(is.numeric, round, 1) #%>%   # keep only 2 decimal numbers
+  mutate_if(is.numeric, round, 1)    #%>%   # keep only 2 decimal numbers
 
 
 # merge columns together:
-summary_tab_clean <- 
-  summary_tab %>% 
+summary_tab_dw_clean <- 
+  summary_tab_dw %>% 
     mutate(
-      Deadwood_mean    = stringr::str_glue("{mean_V_dw}±{sd_V_dw}"),
+      Deadwood_mean   = stringr::str_glue("{mean_V_dw}±{sd_V_dw}"),
       Deadwood_range  = stringr::str_glue("{min_V_dw}-{max_V_dw}"),
       Volume_mean     = stringr::str_glue("{mean_V}±{sd_V}"),
       Volume_range    = stringr::str_glue("{min_V}-{max_V}")) %>% 
   dplyr::select(mng, scenario,Deadwood_mean, Deadwood_range, Volume_mean, Volume_range ) 
     
+
+
+
+
+# Choosing the variables from csv-tables  --------------------------------------
+
+#HSI:s, name of the watershed, regime#
+rslt_HSI <- rslt2[,c("id", "year", "HSI_RL_S1", 
+                     "HSI_RL_S2",  "HSI_RL_S5",  "HSI_RL_S6",  "HSI_RL_S7", 
+                     "HSI_RL_S8",  "HSI_RL_S9",  "HSI_RL_S10", "HSI_RL_S11", 
+                     "HSI_RL_S12", "HSI_RL_S13", "HSI_RL_S15", "HSI_RL_S16", 
+                     "HSI_RL_S17", "HSI_RL_S18", "HSI_RL_S19", "HSI_RL_S20", 
+                     "HSI_RL_S21", "HSI_RL_S22", "HSI_RL_S23", "HSI_RL_S26",
+                     "scenario",   "regime_new")]
+
+
+
 
 
 
@@ -263,6 +269,56 @@ sunny <- c("Lacon_fasciatus",
            "Boros_schneideri", 
            "Acmaeops_septentrionis", 
            "Tropideres_dorsalis")
+
+
+
+
+#
+
+# Table: HSI statistics for microclimatic group ---------------------------
+
+# Filter the data for the same time interval  as the volume
+# convert to long format
+# classify microclimatic groups
+
+HSI_microclim <- 
+  rslt_HSI %>% 
+  filter(year %in% T1) %>% 
+  gather(key="Indicator_species",
+         value="HSI_value",
+         Ditylus_laevis:Tropideres_dorsalis)  %>% 
+  mutate(micro = case_when(
+    Indicator_species %in% indifferent ~ 'indifferent',
+    Indicator_species %in% shady       ~ 'shady',
+    Indicator_species %in% sunny       ~ 'sunny'  ))
+
+
+
+# Get a summary table for HSI values by microclimatic groups 
+summary_tab_HSI <- 
+  HSI_microclim %>% 
+  group_by(scenario, regime_new, micro) %>% 
+  summarize(mean_HSI   = mean(HSI_value, na.rm = T),
+            sd_HSI     = sd(HSI_value       , na.rm = T)
+            ) %>% 
+  mutate_if(is.numeric, round, 1)    #%>%   # keep only 2 decimal numbers
+
+
+# Merge columns together:
+summary_tab_HSI_clean <- 
+  summary_tab_HSI %>% 
+  mutate(
+    HSI_mean       = stringr::str_glue("{mean_HSI}±{sd_HSI}")) %>% 
+  dplyr::select(regime_new, scenario, micro, HSI_mean)  %>% 
+  pivot_wider(names_from  = regime_new,
+              values_from = HSI_mean)  
+
+
+
+
+
+
+
 
 
 
