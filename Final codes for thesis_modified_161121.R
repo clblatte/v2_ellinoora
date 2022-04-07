@@ -141,7 +141,7 @@ summary_tab_dw <-
             sd_V       = sd(V, na.rm = T),
             min_V      = min(V, na.rm=T),
             max_V      = max(V, na.rm=T)) %>% 
-  mutate_if(is.numeric, round, 1)    #%>%   # keep only 2 decimal numbers
+  mutate_if(is.numeric, round, 3)    #%>%   # keep only 2 decimal numbers
 
 
 # merge columns together:
@@ -297,7 +297,7 @@ summary_tab_HSI <-
   summarize(mean_HSI   = mean(HSI_value, na.rm = T),
             sd_HSI     = sd(HSI_value       , na.rm = T)
             ) %>% 
-  mutate_if(is.numeric, round, 1)    #%>%   # keep only 2 decimal numbers
+  mutate_if(is.numeric, round, 3)    #%>%   # keep only 2 decimal numbers
 
 
 # Merge columns together to make a nice output table
