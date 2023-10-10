@@ -68,7 +68,7 @@ rslt2 <- rslt2 %>%
 
 
 #scenario and watershed are separated to different columns#
-rslt2 <- rslt2 %>%  separate(name, c("scenario","gpkg"), sep = "_MV_")
+rslt2 <- rslt2 %>%  tidyr::separate(name, c("scenario","gpkg"), sep = "_MV_")
 
 
 ##Changing the name of scenarios##
@@ -280,7 +280,7 @@ sunny <- c("Lacon_fasciatus",
 HSI_microclim <- 
   rslt_HSI %>% 
   filter(year %in% T1) %>% 
-  gather(key="Indicator_species",
+  tidyr::gather(key="Indicator_species",
          value="HSI_value",
          Ditylus_laevis:Tropideres_dorsalis)  %>% 
   mutate(micro = case_when(
@@ -294,7 +294,7 @@ HSI_microclim <-
 summary_tab_HSI <- 
   HSI_microclim %>% 
   group_by(scenario, regime, micro) %>% 
-  summarize(mean_HSI   = mean(HSI_value, na.rm = T),
+  dplyr::summarize(mean_HSI   = mean(HSI_value, na.rm = T),
             sd_HSI     = sd(HSI_value       , na.rm = T)
             ) %>% 
   mutate_if(is.numeric, round, 3)    #%>%   # keep only 2 decimal numbers
@@ -306,7 +306,7 @@ summary_tab_HSI_clean <-
   mutate(
     HSI_mean = stringr::str_glue("{mean_HSI}±{sd_HSI}")) %>% 
   dplyr::select(regime, scenario, micro, HSI_mean)  %>% 
-  pivot_wider(names_from  = regime,
+  tidyr::pivot_wider(names_from  = regime,
               values_from = HSI_mean)  
 
 
@@ -323,12 +323,13 @@ summary_tab_HSI_clean <-
 
 # Set themes ----
 theme_set(theme_classic())
-theme_update(panel.grid.major = element_line(colour = "grey95",
-                                             size = 0.1,
+theme_update(text = element_text(family = "Times New Roman"),
+             panel.grid.major = element_line(colour = "grey95",
+                                             linewidth = 0.1,
                                              linetype = 2),
              strip.background = element_rect(color="grey95", 
                                              fill="grey95",
-                                             size=0.1, 
+                                             linewidth=0.1, 
                                              linetype="solid"))
 
 
@@ -344,7 +345,7 @@ color_palette <- c("black", "#56B4E9", "#E69F00", "#009E73",
 
 
 #Changing the data format from wide to long #
-rslt_gather <- gather(rslt_HSI_cc,
+rslt_gather <- tidyr::gather(rslt_HSI_cc,
                       key="Indicator_species",
                       value="HSI_value",
                       Ditylus_laevis:Tropideres_dorsalis)
@@ -398,6 +399,17 @@ rslt.mean.out.onlycc <- dplyr::filter(rslt.mean.out, scenario != "Reference")
 
 
 
+
+
+install.packages("extrafont")
+library(extrafont)
+font_import()
+loadfonts(device="win")       #Register fonts for Windows bitmap output
+fonts()
+
+
+
+
 #Lineplot - Figure 3#
 
 p_2<- 
@@ -407,7 +419,7 @@ p_2<-
              group= Groups,
              colour= Groups))+ 
   #scale_y_continuous(labels=scales::percent, limits = c(-0.001, 0.01)) +#
-  geom_line(size = 1) +  
+  geom_line(linewidth = 1) +  
   geom_hline(yintercept=0,         # add horizontal line at value 0
              linetype="dashed", 
              col = color_palette[8]) +
@@ -419,18 +431,21 @@ p_2<-
   ylab("Relative difference in HSI (%)") +
   scale_color_manual(values = color_palette) +
   facet_wrap(vars(scenario)) +
-  theme(axis.title   = element_text(size = 12),  # labels size
+  theme(axis.title   = element_text(size = 14,
+                                    family = "Times New Roman"),  # labels size
         axis.text    = element_text(size = 10),
-        legend.text  = element_text(size = 10),
+        legend.text  = element_text(size = 10,
+                                    family = "Times New Roman"),
         panel.border = element_rect(colour = "black", 
                                     fill=NA, 
                                     size=1),
-        strip.background =element_rect(color="black", size = 1))
+        strip.background =element_rect(color="black", size = 1),
+        text = element_text(family = "Times New Roman"))
 
-#p
-ggsave(filename = 'out_figures/Fig_2.pdf',
+p_2
+ggsave(filename = 'out_figures/Fig_2.tiff',
        plot = p_2, #last_plot(),
-       device = 'pdf',
+       device = 'tiff',
        path = getwd(),
        width = 7, 
        height = 3.2,
@@ -482,16 +497,17 @@ p_SX <- rslt.mean.out.onlycc %>%
   theme_bw(base_size = 20)+
   theme(axis.title.y =element_blank()) +
   theme(legend.title = element_blank()) + 
-  theme(legend.position="top") +
+  theme(legend.position="top",
+        text = element_text(family = "Times New Roman")) +
   #theme(axis.text.x = element_text(hjust = 1)) +
   ylab("Relative difference in HSI (%)") +
   scale_color_manual(values = color_palette) +
   facet_wrap(vars(scenario))
 
 
-ggsave(filename = 'out_figures/Fig_SX.pdf',
+ggsave(filename = 'out_figures/Fig_SX.tiff',
        plot = p_SX, #last_plot(),
-       device = 'pdf',
+       device = 'tiff',
        path = getwd(),
        width = 7, 
        height = 7,
@@ -521,7 +537,7 @@ dim(rslt_HSI) #550920 rows, 25 columns#
 current <- subset(rslt_HSI, scenario == "Reference")
 
 #changing the data to long format#
-rslt_gather <- gather(current,
+rslt_gather <- tidyr::gather(current,
                       key="Indicator_species",
                       value="HSI_value",
                       Ditylus_laevis:Tropideres_dorsalis)
@@ -605,11 +621,12 @@ p_3 <- rslt.mean.out %>%
         panel.border = element_rect(colour = "black", 
                                     fill=NA, 
                                     size=1),
-        strip.background =element_rect(color="black", size = 1)) 
+        strip.background =element_rect(color="black", size = 1),
+        text = element_text(family = "Times New Roman")) 
 
-ggsave(filename = 'out_figures/Fig_3.pdf',
+ggsave(filename = 'out_figures/Fig_3.tiff',
        plot = p_3, #last_plot(),
-       device = 'pdf',
+       device = 'tiff',
        path = getwd(),
        width = 7, 
        height = 3.2,
@@ -628,7 +645,7 @@ rslt_HSI_ccfm <- rslt_HSI
 #I choose which species belong to each group#
 
 #Changing the data fromat to long format#
-rslt_gather <- gather(rslt_HSI_ccfm,
+rslt_gather <- tidyr::gather(rslt_HSI_ccfm,
                       key="Indicator_species",
                       value="HSI_value",
                       Ditylus_laevis:Tropideres_dorsalis)
@@ -695,11 +712,12 @@ p_S4 <-
           panel.border = element_rect(colour = "black", 
                                       fill=NA, 
                                       size=1),
-          strip.background =element_rect(color="black", size = 1))  # legend size
+          strip.background =element_rect(color="black", size = 1),
+          text = element_text(family = "Times New Roman"))  # legend size
   
-ggsave(filename = 'out_figures/Fig_S4.pdf',
+ggsave(filename = 'out_figures/Fig_S4.tiff',
          plot = p_S4, #last_plot(),
-         device = 'pdf',
+         device = 'tiff',
          path = getwd(),
          width = 7.5, 
          height = 6,
@@ -769,12 +787,13 @@ p_4 <- rslt.mean.out.onlycc %>%
         panel.border = element_rect(colour = "black", 
                                     fill=NA, 
                                     size=1),
-        strip.background =element_rect(color="black", size = 1))  # legend size
+        strip.background =element_rect(color="black", size = 1),
+        text = element_text(family = "Times New Roman"))  # legend size
 
 
-ggsave(filename = 'out_figures/Fig_4.pdf',
+ggsave(filename = 'out_figures/Fig_4.tiff',
        plot = p_4, #last_plot(),
-       device = 'pdf',
+       device = 'tiff',
        path = getwd(),
        width = 7, 
        height = 4.5,
